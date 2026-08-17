@@ -1,0 +1,21 @@
+# Segredos e credenciais
+.env
+.env.*
+!.env.example
+backend/.env
+
+# Python
+__pycache__/
+*.pyc
+backend/venv/
+
+# Banco de dados local
+*.db
+backend/cs.db
+
+# Node / frontend
+frontend/node_modules/
+frontend/dist/
+
+# Sistema
+.DS_Store
