@@ -1,7 +1,8 @@
 import csv
 import io
+from datetime import date
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
@@ -33,24 +34,46 @@ def _csv_response(rows: list[list], header: list[str], filename: str) -> Streami
 
 
 @router.get("/reports/carteira.csv")
-def report_portfolio(db: Session = Depends(get_db), _=Depends(require_permission(RESOURCE, "view"))):
+def report_portfolio(
+    start_date: date | None = Query(default=None),
+    end_date: date | None = Query(default=None),
+    db: Session = Depends(get_db),
+    _=Depends(require_permission(RESOURCE, "view")),
+):
+    """Filtra por data de início do relacionamento (RF-148/149)."""
+    query = db.query(Client)
+    if start_date:
+        query = query.filter(Client.relationship_start_date >= start_date)
+    if end_date:
+        query = query.filter(Client.relationship_start_date <= end_date)
+
     rows = [
         [c.corporate_name, c.trade_name or "", c.cnpj or "", c.segment or "", c.status.value, c.tier.value if c.tier else "", c.owner_user_id or ""]
-        for c in db.query(Client).order_by(Client.corporate_name).all()
+        for c in query.order_by(Client.corporate_name).all()
     ]
     return _csv_response(rows, ["Razão social", "Nome fantasia", "CNPJ", "Segmento", "Status", "Tier", "Responsável (id)"], "carteira.csv")
 
 
 @router.get("/reports/health-score.csv")
-def report_health_score(db: Session = Depends(get_db), _=Depends(require_permission(RESOURCE, "view"))):
+def report_health_score(
+    start_date: date | None = Query(default=None),
+    end_date: date | None = Query(default=None),
+    db: Session = Depends(get_db),
+    _=Depends(require_permission(RESOURCE, "view")),
+):
+    """Filtra pela data de cálculo do snapshot mais recente dentro do período."""
     rows = []
     for client in db.query(Client).order_by(Client.corporate_name).all():
-        latest = (
-            db.query(HealthScoreSnapshot)
-            .filter(HealthScoreSnapshot.client_id == client.id)
-            .order_by(HealthScoreSnapshot.calculated_at.desc())
-            .first()
-        )
+        snapshot_query = db.query(HealthScoreSnapshot).filter(HealthScoreSnapshot.client_id == client.id)
+        if start_date:
+            snapshot_query = snapshot_query.filter(HealthScoreSnapshot.calculated_at >= start_date)
+        if end_date:
+            snapshot_query = snapshot_query.filter(HealthScoreSnapshot.calculated_at <= end_date)
+        latest = snapshot_query.order_by(HealthScoreSnapshot.calculated_at.desc()).first()
+
+        if latest is None and (start_date or end_date):
+            continue  # sem snapshot dentro do período filtrado
+
         rows.append([
             client.trade_name or client.corporate_name,
             latest.score if latest else "",
@@ -61,9 +84,21 @@ def report_health_score(db: Session = Depends(get_db), _=Depends(require_permiss
 
 
 @router.get("/reports/satisfacao.csv")
-def report_satisfaction(db: Session = Depends(get_db), _=Depends(require_permission(RESOURCE, "view"))):
+def report_satisfaction(
+    start_date: date | None = Query(default=None),
+    end_date: date | None = Query(default=None),
+    db: Session = Depends(get_db),
+    _=Depends(require_permission(RESOURCE, "view")),
+):
+    """Filtra pela data da resposta da pesquisa."""
+    query = db.query(Survey, Client).join(Client, Survey.client_id == Client.id)
+    if start_date:
+        query = query.filter(Survey.survey_date >= start_date)
+    if end_date:
+        query = query.filter(Survey.survey_date <= end_date)
+
     rows = []
-    for s, client in db.query(Survey, Client).join(Client, Survey.client_id == Client.id).order_by(Survey.survey_date.desc()).all():
+    for s, client in query.order_by(Survey.survey_date.desc()).all():
         rows.append([
             client.trade_name or client.corporate_name,
             s.type.value.upper(),
@@ -76,12 +111,24 @@ def report_satisfaction(db: Session = Depends(get_db), _=Depends(require_permiss
 
 
 @router.get("/reports/onboarding.csv")
-def report_onboarding(db: Session = Depends(get_db), _=Depends(require_permission(RESOURCE, "view"))):
+def report_onboarding(
+    start_date: date | None = Query(default=None),
+    end_date: date | None = Query(default=None),
+    db: Session = Depends(get_db),
+    _=Depends(require_permission(RESOURCE, "view")),
+):
+    """Filtra pela data de início da jornada de onboarding."""
     rows = []
     for client in db.query(Client).order_by(Client.corporate_name).all():
-        journey = db.query(OnboardingJourney).filter(OnboardingJourney.client_id == client.id).first()
+        journey_query = db.query(OnboardingJourney).filter(OnboardingJourney.client_id == client.id)
+        if start_date:
+            journey_query = journey_query.filter(OnboardingJourney.started_at >= start_date)
+        if end_date:
+            journey_query = journey_query.filter(OnboardingJourney.started_at <= end_date)
+        journey = journey_query.first()
         if not journey:
             continue
+
         activities = db.query(OnboardingActivity).filter(OnboardingActivity.client_id == client.id).all()
         total = len(activities)
         done = sum(1 for a in activities if a.is_completed)
@@ -97,15 +144,25 @@ def report_onboarding(db: Session = Depends(get_db), _=Depends(require_permissio
 
 
 @router.get("/reports/utilizacao.csv")
-def report_utilization(db: Session = Depends(get_db), _=Depends(require_permission(RESOURCE, "view"))):
-    rows = []
-    for cm, module, client in (
+def report_utilization(
+    start_date: date | None = Query(default=None),
+    end_date: date | None = Query(default=None),
+    db: Session = Depends(get_db),
+    _=Depends(require_permission(RESOURCE, "view")),
+):
+    """Filtra pela data de contratação do módulo."""
+    query = (
         db.query(ClientModule, Module, Client)
         .join(Module, ClientModule.module_id == Module.id)
         .join(Client, ClientModule.client_id == Client.id)
-        .order_by(Client.corporate_name)
-        .all()
-    ):
+    )
+    if start_date:
+        query = query.filter(ClientModule.contracted_at >= start_date)
+    if end_date:
+        query = query.filter(ClientModule.contracted_at <= end_date)
+
+    rows = []
+    for cm, module, client in query.order_by(Client.corporate_name).all():
         rows.append([
             client.trade_name or client.corporate_name,
             module.name,

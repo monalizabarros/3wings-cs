@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -12,6 +12,7 @@ from app.schemas.expansion_opportunity import (
     ExpansionOpportunityUpdate,
     ExpansionOpportunityWithClientOut,
 )
+from app.schemas.pagination import Page
 from app.services.audit import log_audit
 
 router = APIRouter(tags=["expansion_opportunities"])
@@ -91,20 +92,25 @@ def delete_opportunity(
     log_audit(db, actor=current_user, action="delete", resource_type=RESOURCE, resource_id=opportunity_id)
 
 
-@router.get("/expansion-opportunities", response_model=list[ExpansionOpportunityWithClientOut])
+@router.get("/expansion-opportunities", response_model=Page[ExpansionOpportunityWithClientOut])
 def list_all_opportunities(
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=25, ge=1, le=100),
     db: Session = Depends(get_db),
     _=Depends(require_permission(RESOURCE, "view")),
 ):
-    results = []
-    for opp, client in (
+    query = (
         db.query(ExpansionOpportunity, Client)
         .join(Client, ExpansionOpportunity.client_id == Client.id)
         .filter(ExpansionOpportunity.stage.notin_(["ganha", "perdida"]))
         .order_by(ExpansionOpportunity.created_at.desc())
-        .all()
-    ):
+    )
+    total = query.count()
+    rows = query.offset((page - 1) * page_size).limit(page_size).all()
+
+    results = []
+    for opp, client in rows:
         data = ExpansionOpportunityOut.model_validate(opp).model_dump()
         data["client_name"] = client.trade_name or client.corporate_name
         results.append(data)
-    return results
+    return Page(items=results, total=total, page=page, page_size=page_size)

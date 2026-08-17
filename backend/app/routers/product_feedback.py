@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -6,6 +6,7 @@ from app.deps import require_permission
 from app.models.client import Client
 from app.models.product_feedback import ProductFeedback
 from app.models.user import User
+from app.schemas.pagination import Page
 from app.schemas.product_feedback import (
     ProductFeedbackCreate,
     ProductFeedbackOut,
@@ -13,6 +14,7 @@ from app.schemas.product_feedback import (
     ProductFeedbackWithClientOut,
 )
 from app.services.audit import log_audit
+from app.services.pagination import paginate
 
 router = APIRouter(tags=["product_feedback"])
 
@@ -91,19 +93,24 @@ def delete_feedback(
     log_audit(db, actor=current_user, action="delete", resource_type=RESOURCE, resource_id=feedback_id)
 
 
-@router.get("/product-feedback", response_model=list[ProductFeedbackWithClientOut])
+@router.get("/product-feedback", response_model=Page[ProductFeedbackWithClientOut])
 def list_all_feedback(
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=25, ge=1, le=100),
     db: Session = Depends(get_db),
     _=Depends(require_permission(RESOURCE, "view")),
 ):
-    results = []
-    for fb, client in (
+    query = (
         db.query(ProductFeedback, Client)
         .join(Client, ProductFeedback.client_id == Client.id)
         .order_by(ProductFeedback.created_at.desc())
-        .all()
-    ):
+    )
+    total = query.count()
+    rows = query.offset((page - 1) * page_size).limit(page_size).all()
+
+    results = []
+    for fb, client in rows:
         data = ProductFeedbackOut.model_validate(fb).model_dump()
         data["client_name"] = client.trade_name or client.corporate_name
         results.append(data)
-    return results
+    return Page(items=results, total=total, page=page, page_size=page_size)

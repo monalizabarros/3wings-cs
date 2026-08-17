@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, ApiError } from "../api/client";
+import Pagination from "../components/Pagination";
+import type { Page } from "../types";
 
 interface AuditLog {
   id: string;
@@ -17,16 +19,23 @@ const ACTION_LABELS: Record<string, string> = {
   login: "Login",
 };
 
+const PAGE_SIZE = 25;
+
 export default function AuditPage() {
   const [logs, setLogs] = useState<AuditLog[] | null>(null);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     api
-      .get<AuditLog[]>("/audit-logs")
-      .then(setLogs)
+      .get<Page<AuditLog>>(`/audit-logs?page=${page}&page_size=${PAGE_SIZE}`)
+      .then((res) => {
+        setLogs(res.items);
+        setTotal(res.total);
+      })
       .catch((err) => setError(err instanceof ApiError ? err.message : "Erro ao carregar auditoria."));
-  }, []);
+  }, [page]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -69,6 +78,7 @@ export default function AuditPage() {
             <div style={{ color: "var(--text-secondary)" }}>{new Date(log.created_at).toLocaleString("pt-BR")}</div>
           </div>
         ))}
+        <Pagination page={page} pageSize={PAGE_SIZE} total={total} onPageChange={setPage} />
       </div>
     </div>
   );

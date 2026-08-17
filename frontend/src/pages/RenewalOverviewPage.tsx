@@ -1,27 +1,49 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, ApiError } from "../api/client";
+import Pagination from "../components/Pagination";
 import StatusBadge from "../components/StatusBadge";
 import {
   CHURN_CATEGORY_LABELS,
   RENEWAL_STATUS_LABELS,
   RENEWAL_STATUS_TONE,
   type ChurnRecord,
+  type Page,
   type RenewalWithClient,
 } from "../types";
 
+const PAGE_SIZE = 25;
+
 export default function RenewalOverviewPage() {
   const [renewals, setRenewals] = useState<RenewalWithClient[] | null>(null);
+  const [renewalsTotal, setRenewalsTotal] = useState(0);
+  const [renewalsPage, setRenewalsPage] = useState(1);
+
   const [churnRecords, setChurnRecords] = useState<ChurnRecord[] | null>(null);
+  const [churnTotal, setChurnTotal] = useState(0);
+  const [churnPage, setChurnPage] = useState(1);
+
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     api
-      .get<RenewalWithClient[]>("/renewals/upcoming?days=90")
-      .then(setRenewals)
+      .get<Page<RenewalWithClient>>(`/renewals/upcoming?days=90&page=${renewalsPage}&page_size=${PAGE_SIZE}`)
+      .then((res) => {
+        setRenewals(res.items);
+        setRenewalsTotal(res.total);
+      })
       .catch((err) => setError(err instanceof ApiError ? err.message : "Erro ao carregar renovações."));
-    api.get<ChurnRecord[]>("/churn-records").then(setChurnRecords).catch(() => setChurnRecords([]));
-  }, []);
+  }, [renewalsPage]);
+
+  useEffect(() => {
+    api
+      .get<Page<ChurnRecord>>(`/churn-records?page=${churnPage}&page_size=${PAGE_SIZE}`)
+      .then((res) => {
+        setChurnRecords(res.items);
+        setChurnTotal(res.total);
+      })
+      .catch(() => setChurnRecords([]));
+  }, [churnPage]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -53,6 +75,7 @@ export default function RenewalOverviewPage() {
             </div>
           </div>
         ))}
+        <Pagination page={renewalsPage} pageSize={PAGE_SIZE} total={renewalsTotal} onPageChange={setRenewalsPage} />
       </div>
 
       <h2 style={{ fontSize: 16, color: "var(--color-graphite)" }}>Churn registrado</h2>
@@ -73,6 +96,7 @@ export default function RenewalOverviewPage() {
             <div style={{ color: "var(--text-secondary)" }}>{c.lost_value != null ? `R$ ${c.lost_value.toLocaleString("pt-BR")}` : "—"}</div>
           </div>
         ))}
+        <Pagination page={churnPage} pageSize={PAGE_SIZE} total={churnTotal} onPageChange={setChurnPage} />
       </div>
     </div>
   );

@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, ApiError } from "../api/client";
+import Pagination from "../components/Pagination";
 import StatusBadge from "../components/StatusBadge";
-import { TASK_PRIORITY_LABELS, TASK_STATUS_LABELS, type TaskStatus, type TaskWithClient } from "../types";
+import { TASK_PRIORITY_LABELS, TASK_STATUS_LABELS, type Page, type TaskStatus, type TaskWithClient } from "../types";
+
+const PAGE_SIZE = 25;
 
 const FILTERS: { key: string; label: string }[] = [
   { key: "all", label: "Todas" },
@@ -14,28 +17,40 @@ const FILTERS: { key: string; label: string }[] = [
 
 export default function TasksPage() {
   const [tasks, setTasks] = useState<TaskWithClient[] | null>(null);
+  const [total, setTotal] = useState(0);
   const [filter, setFilter] = useState("all");
+  const [page, setPage] = useState(1);
   const [error, setError] = useState<string | null>(null);
 
-  function load(activeFilter: string) {
+  function load(activeFilter: string, activePage: number) {
     const params = new URLSearchParams();
     if (activeFilter === "overdue") params.set("overdue", "true");
     else if (activeFilter !== "all") params.set("status", activeFilter);
+    params.set("page", String(activePage));
+    params.set("page_size", String(PAGE_SIZE));
 
     api
-      .get<TaskWithClient[]>(`/tasks${params.toString() ? `?${params}` : ""}`)
-      .then(setTasks)
+      .get<Page<TaskWithClient>>(`/tasks?${params}`)
+      .then((res) => {
+        setTasks(res.items);
+        setTotal(res.total);
+      })
       .catch((err) => setError(err instanceof ApiError ? err.message : "Erro ao carregar tarefas."));
   }
 
-  useEffect(() => load(filter), [filter]);
+  useEffect(() => load(filter, page), [filter, page]);
+
+  function changeFilter(key: string) {
+    setFilter(key);
+    setPage(1);
+  }
 
   const today = new Date().toISOString().slice(0, 10);
 
   async function toggleDone(t: TaskWithClient) {
     try {
       await api.patch(`/tasks/${t.id}`, { status: t.status === "concluida" ? "aberta" : "concluida" });
-      load(filter);
+      load(filter, page);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Erro ao atualizar tarefa.");
     }
@@ -49,7 +64,7 @@ export default function TasksPage() {
         {FILTERS.map((f) => (
           <button
             key={f.key}
-            onClick={() => setFilter(f.key)}
+            onClick={() => changeFilter(f.key)}
             style={{
               padding: "6px 12px",
               borderRadius: "var(--radius-pill)",
@@ -100,6 +115,7 @@ export default function TasksPage() {
             </div>
           );
         })}
+        <Pagination page={page} pageSize={PAGE_SIZE} total={total} onPageChange={setPage} />
       </div>
     </div>
   );

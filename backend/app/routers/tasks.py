@@ -8,19 +8,23 @@ from app.deps import require_permission
 from app.models.client import Client
 from app.models.task import Task, TaskStatus
 from app.models.user import User
+from app.schemas.pagination import Page
 from app.schemas.task import TaskCreate, TaskOut, TaskUpdate, TaskWithClientOut
 from app.services.audit import log_audit
+from app.services.pagination import paginate
 
 router = APIRouter(tags=["tasks"])
 
 RESOURCE = "tasks"
 
 
-@router.get("/tasks", response_model=list[TaskWithClientOut])
+@router.get("/tasks", response_model=Page[TaskWithClientOut])
 def list_all_tasks(
     status_filter: TaskStatus | None = Query(default=None, alias="status"),
     responsible_user_id: str | None = Query(default=None),
     overdue: bool | None = Query(default=None),
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=25, ge=1, le=100),
     db: Session = Depends(get_db),
     _=Depends(require_permission(RESOURCE, "view")),
 ):
@@ -32,13 +36,17 @@ def list_all_tasks(
     if overdue:
         today = date.today()
         query = query.filter(Task.due_date < today, Task.status != TaskStatus.CONCLUIDA)
+    query = query.order_by(Task.due_date)
+
+    total = query.count()
+    rows = query.offset((page - 1) * page_size).limit(page_size).all()
 
     results = []
-    for task, client in query.order_by(Task.due_date).all():
+    for task, client in rows:
         data = TaskOut.model_validate(task).model_dump()
         data["client_name"] = client.trade_name or client.corporate_name
         results.append(data)
-    return results
+    return Page(items=results, total=total, page=page, page_size=page_size)
 
 
 def _serialize(task: Task) -> dict:

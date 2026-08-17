@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.core.security import hash_password
@@ -6,8 +6,10 @@ from app.database import get_db
 from app.deps import get_current_user, require_permission
 from app.models.user import RoleName, User
 from app.schemas.client import UserOption
+from app.schemas.pagination import Page
 from app.schemas.user import UserCreate, UserOut, UserUpdate
 from app.services.audit import log_audit
+from app.services.pagination import paginate
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -39,12 +41,16 @@ def _serialize(user: User) -> dict:
     }
 
 
-@router.get("", response_model=list[UserOut])
+@router.get("", response_model=Page[UserOut])
 def list_users(
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=25, ge=1, le=100),
     db: Session = Depends(get_db),
     _=Depends(require_permission(RESOURCE, "view")),
 ):
-    return db.query(User).order_by(User.name).all()
+    query = db.query(User).order_by(User.name)
+    items, total = paginate(query, page, page_size)
+    return Page(items=items, total=total, page=page, page_size=page_size)
 
 
 @router.get("/{user_id}", response_model=UserOut)

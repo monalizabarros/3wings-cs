@@ -1,19 +1,27 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, ApiError } from "../api/client";
+import Pagination from "../components/Pagination";
 import StatusBadge from "../components/StatusBadge";
-import { RISK_CATEGORY_LABELS, type RiskWithClient } from "../types";
+import { RISK_CATEGORY_LABELS, type Page, type RiskWithClient } from "../types";
+
+const PAGE_SIZE = 25;
 
 export default function RisksOverviewPage() {
   const [risks, setRisks] = useState<RiskWithClient[] | null>(null);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     api
-      .get<RiskWithClient[]>("/risks/critical")
-      .then(setRisks)
+      .get<Page<RiskWithClient>>(`/risks/critical?page=${page}&page_size=${PAGE_SIZE}`)
+      .then((res) => {
+        setRisks(res.items);
+        setTotal(res.total);
+      })
       .catch((err) => setError(err instanceof ApiError ? err.message : "Erro ao carregar riscos."));
-  }, []);
+  }, [page]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -47,6 +55,7 @@ export default function RisksOverviewPage() {
             </div>
           </div>
         ))}
+        <Pagination page={page} pageSize={PAGE_SIZE} total={total} onPageChange={setPage} />
       </div>
     </div>
   );

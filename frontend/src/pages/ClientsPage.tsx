@@ -6,6 +6,7 @@ import CSParticipationPanel from "../components/CSParticipationPanel";
 import DeliveryHandoffPanel from "../components/DeliveryHandoffPanel";
 import HandoffPanel from "../components/HandoffPanel";
 import ImplementationPanel from "../components/ImplementationPanel";
+import Pagination from "../components/Pagination";
 import ProductMatrixPanel from "../components/ProductMatrixPanel";
 import StatusBadge from "../components/StatusBadge";
 import {
@@ -15,13 +16,18 @@ import {
   type ClientOwnerHistoryEntry,
   type ClientStatus,
   type OverdueClient,
+  type Page,
   type UserOption,
 } from "../types";
+
+const PAGE_SIZE = 25;
 
 const STATUS_OPTIONS = Object.entries(CLIENT_STATUS_LABELS) as [ClientStatus, string][];
 
 export default function ClientsPage() {
   const [clients, setClients] = useState<Client[] | null>(null);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
   const [csOptions, setCsOptions] = useState<UserOption[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -42,13 +48,17 @@ export default function ClientsPage() {
 
   function load() {
     api
-      .get<Client[]>("/clients")
-      .then(setClients)
+      .get<Page<Client>>(`/clients?page=${page}&page_size=${PAGE_SIZE}`)
+      .then((res) => {
+        setClients(res.items);
+        setTotal(res.total);
+      })
       .catch((err) => setError(err instanceof ApiError ? err.message : "Erro ao carregar clientes."));
   }
 
+  useEffect(load, [page]);
+
   useEffect(() => {
-    load();
     api.get<UserOption[]>("/users/options/cs").then(setCsOptions).catch(() => {});
     api.get<OverdueClient[]>("/check-ins/overdue-clients").then(setOverdueClients).catch(() => {});
   }, []);
@@ -171,6 +181,7 @@ export default function ClientsPage() {
             </div>
           </div>
         ))}
+        <Pagination page={page} pageSize={PAGE_SIZE} total={total} onPageChange={setPage} />
       </div>
 
       {historyClientId && (

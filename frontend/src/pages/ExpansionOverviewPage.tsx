@@ -1,32 +1,41 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, ApiError } from "../api/client";
+import Pagination from "../components/Pagination";
 import StatusBadge from "../components/StatusBadge";
 import {
   EXPANSION_STAGE_LABELS,
   EXPANSION_STAGE_TONE,
   EXPANSION_TYPE_LABELS,
   type ExpansionOpportunityWithClient,
+  type Page,
 } from "../types";
+
+const PAGE_SIZE = 25;
 
 export default function ExpansionOverviewPage() {
   const [items, setItems] = useState<ExpansionOpportunityWithClient[] | null>(null);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     api
-      .get<ExpansionOpportunityWithClient[]>("/expansion-opportunities")
-      .then(setItems)
+      .get<Page<ExpansionOpportunityWithClient>>(`/expansion-opportunities?page=${page}&page_size=${PAGE_SIZE}`)
+      .then((res) => {
+        setItems(res.items);
+        setTotal(res.total);
+      })
       .catch((err) => setError(err instanceof ApiError ? err.message : "Erro ao carregar oportunidades."));
-  }, []);
+  }, [page]);
 
-  const totalEstimated = items?.reduce((sum, o) => sum + (o.estimated_value ?? 0), 0) ?? 0;
+  const pageEstimated = items?.reduce((sum, o) => sum + (o.estimated_value ?? 0), 0) ?? 0;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <h1 style={{ fontSize: 20, color: "var(--color-graphite)" }}>Expansão</h1>
       <div style={{ fontSize: 12.5, color: "var(--text-muted)" }}>
-        Oportunidades de cross-sell e upsell em aberto, em todas as contas. Valor estimado total: R$ {totalEstimated.toLocaleString("pt-BR")}.
+        Oportunidades de cross-sell e upsell em aberto, em todas as contas ({total} no total). Valor estimado nesta página: R$ {pageEstimated.toLocaleString("pt-BR")}.
       </div>
 
       {error && <div style={{ fontSize: 13, color: "var(--color-danger-text)" }}>{error}</div>}
@@ -54,6 +63,7 @@ export default function ExpansionOverviewPage() {
             </div>
           </div>
         ))}
+        <Pagination page={page} pageSize={PAGE_SIZE} total={total} onPageChange={setPage} />
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 from datetime import date, datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -8,6 +8,7 @@ from app.deps import require_permission
 from app.models.client import Client, ClientStatus
 from app.models.renewal import ChurnRecord, Renewal, RenewalStatus
 from app.models.user import User
+from app.schemas.pagination import Page
 from app.schemas.renewal import (
     ChurnRecordOut,
     RenewalComplete,
@@ -17,6 +18,7 @@ from app.schemas.renewal import (
     RenewalWithClientOut,
 )
 from app.services.audit import log_audit
+from app.services.pagination import paginate
 
 router = APIRouter(tags=["renewals"])
 
@@ -131,30 +133,39 @@ def complete_renewal(
     return renewal
 
 
-@router.get("/renewals/upcoming", response_model=list[RenewalWithClientOut])
+@router.get("/renewals/upcoming", response_model=Page[RenewalWithClientOut])
 def list_upcoming_renewals(
     days: int = 90,
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=25, ge=1, le=100),
     db: Session = Depends(get_db),
     _=Depends(require_permission(RESOURCE, "view")),
 ):
     limit = date.today() + timedelta(days=days)
-    results = []
-    for renewal, client in (
+    query = (
         db.query(Renewal, Client)
         .join(Client, Renewal.client_id == Client.id)
         .filter(Renewal.status.notin_(["renovado", "nao_renovado"]), Renewal.contract_end_date <= limit)
         .order_by(Renewal.contract_end_date.asc())
-        .all()
-    ):
+    )
+    total = query.count()
+    rows = query.offset((page - 1) * page_size).limit(page_size).all()
+
+    results = []
+    for renewal, client in rows:
         data = RenewalOut.model_validate(renewal).model_dump()
         data["client_name"] = client.trade_name or client.corporate_name
         results.append(data)
-    return results
+    return Page(items=results, total=total, page=page, page_size=page_size)
 
 
-@router.get("/churn-records", response_model=list[ChurnRecordOut])
+@router.get("/churn-records", response_model=Page[ChurnRecordOut])
 def list_churn_records(
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=25, ge=1, le=100),
     db: Session = Depends(get_db),
     _=Depends(require_permission(RESOURCE, "view")),
 ):
-    return db.query(ChurnRecord).order_by(ChurnRecord.churn_date.desc()).all()
+    query = db.query(ChurnRecord).order_by(ChurnRecord.churn_date.desc())
+    items, total = paginate(query, page, page_size)
+    return Page(items=items, total=total, page=page, page_size=page_size)

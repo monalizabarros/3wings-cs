@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -11,7 +11,9 @@ from app.schemas.client import (
     ClientOwnerHistoryOut,
     ClientUpdate,
 )
+from app.schemas.pagination import Page
 from app.services.audit import log_audit
+from app.services.pagination import paginate
 
 router = APIRouter(prefix="/clients", tags=["clients"])
 
@@ -35,12 +37,16 @@ def _serialize(client: Client) -> dict:
     }
 
 
-@router.get("", response_model=list[ClientOut])
+@router.get("", response_model=Page[ClientOut])
 def list_clients(
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=25, ge=1, le=100),
     db: Session = Depends(get_db),
     _=Depends(require_permission(RESOURCE, "view")),
 ):
-    return db.query(Client).order_by(Client.corporate_name).all()
+    query = db.query(Client).order_by(Client.corporate_name)
+    items, total = paginate(query, page, page_size)
+    return Page(items=items, total=total, page=page, page_size=page_size)
 
 
 @router.get("/{client_id}", response_model=ClientOut)

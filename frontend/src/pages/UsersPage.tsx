@@ -1,22 +1,29 @@
 import { useEffect, useState, type CSSProperties, type FormEvent, type ReactNode } from "react";
 import { api, ApiError } from "../api/client";
-import { ROLE_LABELS, type RoleName, type User } from "../types";
+import Pagination from "../components/Pagination";
+import { ROLE_LABELS, type Page, type RoleName, type User } from "../types";
 
 const ROLE_OPTIONS = Object.entries(ROLE_LABELS) as [RoleName, string][];
+const PAGE_SIZE = 25;
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[] | null>(null);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
 
   function load() {
     api
-      .get<User[]>("/users")
-      .then(setUsers)
+      .get<Page<User>>(`/users?page=${page}&page_size=${PAGE_SIZE}`)
+      .then((res) => {
+        setUsers(res.items);
+        setTotal(res.total);
+      })
       .catch((err) => setError(err instanceof ApiError ? err.message : "Erro ao carregar usuários."));
   }
 
-  useEffect(load, []);
+  useEffect(load, [page]);
 
   async function toggleActive(user: User) {
     try {
@@ -111,6 +118,7 @@ export default function UsersPage() {
             </div>
           </div>
         ))}
+        <Pagination page={page} pageSize={PAGE_SIZE} total={total} onPageChange={setPage} />
       </div>
     </div>
   );

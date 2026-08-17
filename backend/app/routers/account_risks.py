@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -22,6 +22,7 @@ from app.schemas.account_risk import (
     RiskWithClientOut,
 )
 from app.schemas.action_plan import ActionPlanOut
+from app.schemas.pagination import Page
 from app.services.audit import log_audit
 
 router = APIRouter(tags=["risks"])
@@ -188,17 +189,23 @@ def delete_evidence(
 # --- Riscos críticos (RF-101) ---
 
 
-@router.get("/risks/critical", response_model=list[RiskWithClientOut])
+@router.get("/risks/critical", response_model=Page[RiskWithClientOut])
 def list_critical_risks(
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=25, ge=1, le=100),
     db: Session = Depends(get_db),
     _=Depends(require_permission(RESOURCE, "view")),
 ):
-    results = []
+    all_critical = []
     for risk, client in db.query(AccountRisk, Client).join(Client, AccountRisk.client_id == Client.id).all():
         if not _is_critical(risk):
             continue
         data = RiskOut.model_validate(risk).model_dump()
         data["client_name"] = client.trade_name or client.corporate_name
         data["is_critical"] = True
-        results.append(data)
-    return results
+        all_critical.append(data)
+
+    total = len(all_critical)
+    start = (page - 1) * page_size
+    items = all_critical[start : start + page_size]
+    return Page(items=items, total=total, page=page, page_size=page_size)

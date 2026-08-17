@@ -1,24 +1,33 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, ApiError } from "../api/client";
+import Pagination from "../components/Pagination";
 import StatusBadge from "../components/StatusBadge";
 import {
   FEEDBACK_CATEGORY_LABELS,
   FEEDBACK_STATUS_LABELS,
   FEEDBACK_STATUS_TONE,
+  type Page,
   type ProductFeedbackWithClient,
 } from "../types";
 
+const PAGE_SIZE = 25;
+
 export default function ProductFeedbackPage() {
   const [items, setItems] = useState<ProductFeedbackWithClient[] | null>(null);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     api
-      .get<ProductFeedbackWithClient[]>("/product-feedback")
-      .then(setItems)
+      .get<Page<ProductFeedbackWithClient>>(`/product-feedback?page=${page}&page_size=${PAGE_SIZE}`)
+      .then((res) => {
+        setItems(res.items);
+        setTotal(res.total);
+      })
       .catch((err) => setError(err instanceof ApiError ? err.message : "Erro ao carregar feedback."));
-  }, []);
+  }, [page]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -50,6 +59,7 @@ export default function ProductFeedbackPage() {
             </div>
           </div>
         ))}
+        <Pagination page={page} pageSize={PAGE_SIZE} total={total} onPageChange={setPage} />
       </div>
     </div>
   );
