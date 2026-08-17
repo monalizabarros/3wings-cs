@@ -18,15 +18,20 @@ from app.routers import (
     cs_participation,
     dashboard,
     delivery_handoffs,
+    expansion_opportunities,
     health_score,
     implementation,
     interactions,
     onboarding,
     permissions,
+    product_feedback,
     products,
+    qbrs,
+    renewals,
     reports,
     sales_handoffs,
     search,
+    support_tickets,
     surveys,
     tasks,
     users,
@@ -64,6 +69,11 @@ app.include_router(check_ins.router)
 app.include_router(health_score.router)
 app.include_router(account_risks.router)
 app.include_router(surveys.router)
+app.include_router(qbrs.router)
+app.include_router(product_feedback.router)
+app.include_router(support_tickets.router)
+app.include_router(expansion_opportunities.router)
+app.include_router(renewals.router)
 app.include_router(dashboard.router)
 app.include_router(alerts.router)
 app.include_router(search.router)

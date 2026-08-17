@@ -13,6 +13,8 @@ from sqlalchemy.engine import Engine
 STATEMENTS = [
     "ALTER TABLE tasks ADD COLUMN action_plan_id VARCHAR(36)",
     "ALTER TABLE clients ADD COLUMN tier VARCHAR(20)",
+    "ALTER TABLE clients ADD COLUMN contract_value FLOAT",
+    "ALTER TABLE clients ADD COLUMN renewal_date DATE",
 ]
 
 

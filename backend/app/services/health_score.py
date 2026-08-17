@@ -14,12 +14,11 @@ from app.models.health_score import (
 )
 from app.models.implementation import ImplementationSituation, ImplementationSummary
 from app.models.onboarding import OnboardingActivity, OnboardingJourney
+from app.models.support_ticket import SupportTicket, TicketStatus
 from app.models.survey import Survey, SurveyType
 from app.models.tier_cadence import TierCadence
 
 # --- Indicadores automáticos: aproveitam dados já existentes no sistema. ---
-# Indicadores manuais (ex: suporte) ficam prontos para alimentação
-# automática quando os Blocos 13/17 existirem (RF-098).
 
 
 def _implantacao_value(db: Session, client_id: str) -> float | None:
@@ -105,12 +104,29 @@ def _satisfacao_value(db: Session, client_id: str) -> float | None:
     return sum(normalized) / len(normalized)
 
 
+def _suporte_value(db: Session, client_id: str) -> float | None:
+    """RF-098 concretizado para suporte (Bloco 16): usa a satisfação média
+    registrada nos tickets de suporte (escala 1-5, normalizada para 0-100).
+    Sem nenhuma nota de satisfação registrada ainda, o indicador é excluído
+    do cálculo — mesmo padrão de 'skip' já usado nos demais indicadores."""
+    scores = [
+        t.satisfaction_score
+        for t in db.query(SupportTicket).filter(SupportTicket.client_id == client_id).all()
+        if t.satisfaction_score is not None
+    ]
+    if not scores:
+        return None
+    avg = sum(scores) / len(scores)
+    return ((avg - 1) / 4) * 100.0
+
+
 AUTO_VALUE_FUNCS = {
     "implantacao": _implantacao_value,
     "adocao": _adocao_value,
     "relacionamento": _relacionamento_value,
     "utilizacao": _utilizacao_value,
     "satisfacao": _satisfacao_value,
+    "suporte": _suporte_value,
 }
 
 

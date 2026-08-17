@@ -1,3 +1,5 @@
+from datetime import date, timedelta
+
 from sqlalchemy.orm import Session
 
 from app.models.account_risk import AccountRisk, RiskImpact, RiskProbability, RiskStatus
@@ -10,6 +12,8 @@ from app.models.survey import Survey, SurveyType
 from app.models.task import Task, TaskPriority, TaskStatus
 from app.services.check_ins_overview import list_overdue_clients
 from app.services.health_score import get_deterioration_reasons
+
+RENEWAL_WINDOW_DAYS = 60
 
 
 def _client_name(client: Client) -> str:
@@ -129,6 +133,67 @@ def _evaluate_implantacao_atrasada(db: Session) -> list[dict]:
     return results
 
 
+def _evaluate_renovacao_proxima(db: Session) -> list[dict]:
+    """RF-143, implementado no Bloco 17 usando Client.renewal_date."""
+    results = []
+    limit = date.today() + timedelta(days=RENEWAL_WINDOW_DAYS)
+    for client in db.query(Client).filter(Client.renewal_date.isnot(None), Client.renewal_date <= limit).all():
+        days_left = (client.renewal_date - date.today()).days
+        results.append(
+            {
+                "event_type": AlertEventType.RENOVACAO_PROXIMA,
+                "client_id": client.id,
+                "client_name": _client_name(client),
+                "message": f"Renovação em {days_left} dia(s) ({client.renewal_date})."
+                if days_left >= 0
+                else f"Renovação vencida há {abs(days_left)} dia(s) ({client.renewal_date}).",
+                "severity": "media",
+            }
+        )
+    return results
+
+
+def _evaluate_renovacao_risco(db: Session) -> list[dict]:
+    """RF-144: renovação próxima combinada com risco crítico ou Health Score
+    vermelho."""
+    results = []
+    limit = date.today() + timedelta(days=RENEWAL_WINDOW_DAYS)
+    for client in db.query(Client).filter(Client.renewal_date.isnot(None), Client.renewal_date <= limit).all():
+        has_critical_risk = (
+            db.query(AccountRisk)
+            .filter(
+                AccountRisk.client_id == client.id,
+                AccountRisk.impact == RiskImpact.ALTO,
+                AccountRisk.probability == RiskProbability.ALTA,
+                AccountRisk.status.notin_([RiskStatus.MITIGADO, RiskStatus.ENCERRADO]),
+            )
+            .first()
+            is not None
+        )
+        latest_snapshot = (
+            db.query(HealthScoreSnapshot)
+            .filter(HealthScoreSnapshot.client_id == client.id)
+            .order_by(HealthScoreSnapshot.calculated_at.desc())
+            .first()
+        )
+        is_red = latest_snapshot is not None and latest_snapshot.classification == HealthScoreClassification.VERMELHO
+
+        if not (has_critical_risk or is_red):
+            continue
+
+        reason = "risco crítico em aberto" if has_critical_risk else "Health Score crítico"
+        results.append(
+            {
+                "event_type": AlertEventType.RENOVACAO_RISCO,
+                "client_id": client.id,
+                "client_name": _client_name(client),
+                "message": f"Renovação em {client.renewal_date} com {reason}.",
+                "severity": "alta",
+            }
+        )
+    return results
+
+
 def _evaluate_risco_critico(db: Session) -> list[dict]:
     results = []
     for risk, client in db.query(AccountRisk, Client).join(Client, AccountRisk.client_id == Client.id).all():
@@ -156,8 +221,8 @@ EVALUATORS = {
     AlertEventType.SATISFACAO_NEGATIVA: _evaluate_satisfacao_negativa,
     AlertEventType.IMPLANTACAO_ATRASADA: _evaluate_implantacao_atrasada,
     AlertEventType.RISCO_CRITICO: _evaluate_risco_critico,
-    # RENOVACAO_PROXIMA e RENOVACAO_RISCO ficam sem avaliador: não há data de
-    # renovação de contrato no sistema ainda (Bloco de Renovação não construído).
+    AlertEventType.RENOVACAO_PROXIMA: _evaluate_renovacao_proxima,
+    AlertEventType.RENOVACAO_RISCO: _evaluate_renovacao_risco,
 }
 
 

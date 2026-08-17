@@ -15,6 +15,8 @@ class ClientBase(BaseModel):
     relationship_start_date: date | None = None
     status: ClientStatus = ClientStatus.PROSPECT
     tier: TierLevel | None = None
+    contract_value: float | None = None
+    renewal_date: date | None = None
     owner_user_id: str | None = None
 
 
@@ -32,6 +34,8 @@ class ClientUpdate(BaseModel):
     relationship_start_date: date | None = None
     status: ClientStatus | None = None
     tier: TierLevel | None = None
+    contract_value: float | None = None
+    renewal_date: date | None = None
     owner_user_id: str | None = None
 
 

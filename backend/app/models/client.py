@@ -2,7 +2,7 @@ import enum
 import uuid
 from datetime import date, datetime, timezone
 
-from sqlalchemy import Date, DateTime, Enum, ForeignKey, String
+from sqlalchemy import Date, DateTime, Enum, Float, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -47,6 +47,8 @@ class Client(Base):
         Enum(ClientStatus), nullable=False, default=ClientStatus.PROSPECT
     )
     tier: Mapped[TierLevel | None] = mapped_column(Enum(TierLevel), nullable=True)
+    contract_value: Mapped[float | None] = mapped_column(Float, nullable=True)
+    renewal_date: Mapped[date | None] = mapped_column(Date, nullable=True)
 
     owner_user_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("users.id"), nullable=True

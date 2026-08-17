@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { to: "/riscos", label: "Riscos", icon: "alert-triangle" },
   { to: "/alertas", label: "Alertas", icon: "bell" },
   { to: "/relatorios", label: "Relatórios", icon: "file-text" },
+  { to: "/feedback-produto", label: "Feedback", icon: "message-square" },
   { to: "/expansao", label: "Expansão", icon: "trending-up" },
   { to: "/renovacao", label: "Renovação", icon: "refresh" },
 ];

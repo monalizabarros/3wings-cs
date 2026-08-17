@@ -47,6 +47,11 @@ from app.models.onboarding import (
     OnboardingActivity,
     AdoptionMilestone,
 )
+from app.models.qbr import QBR, QBRStatus
+from app.models.product_feedback import ProductFeedback, FeedbackCategory, FeedbackStatus
+from app.models.support_ticket import SupportTicket, TicketSeverity, TicketStatus
+from app.models.expansion_opportunity import ExpansionOpportunity, ExpansionType, ExpansionStage
+from app.models.renewal import Renewal, RenewalStatus, ChurnRecord, ChurnCategory
 
 __all__ = [
     "User",
@@ -109,4 +114,19 @@ __all__ = [
     "SurveyType",
     "AlertRule",
     "AlertEventType",
+    "QBR",
+    "QBRStatus",
+    "ProductFeedback",
+    "FeedbackCategory",
+    "FeedbackStatus",
+    "SupportTicket",
+    "TicketSeverity",
+    "TicketStatus",
+    "ExpansionOpportunity",
+    "ExpansionType",
+    "ExpansionStage",
+    "Renewal",
+    "RenewalStatus",
+    "ChurnRecord",
+    "ChurnCategory",
 ]

@@ -6,13 +6,18 @@ import CheckInsPanel from "../components/CheckInsPanel";
 import ContactsPanel from "../components/ContactsPanel";
 import CSParticipationPanel from "../components/CSParticipationPanel";
 import DeliveryHandoffPanel from "../components/DeliveryHandoffPanel";
+import ExpansionPanel from "../components/ExpansionPanel";
 import HandoffPanel from "../components/HandoffPanel";
 import HealthScorePanel from "../components/HealthScorePanel";
 import ImplementationPanel from "../components/ImplementationPanel";
 import InteractionsTimeline from "../components/InteractionsTimeline";
 import OnboardingPanel from "../components/OnboardingPanel";
+import ProductFeedbackPanel from "../components/ProductFeedbackPanel";
 import ProductMatrixPanel from "../components/ProductMatrixPanel";
+import QBRPanel from "../components/QBRPanel";
+import RenewalPanel from "../components/RenewalPanel";
 import RisksPanel from "../components/RisksPanel";
+import SupportTicketsPanel from "../components/SupportTicketsPanel";
 import SurveysPanel from "../components/SurveysPanel";
 import StatusBadge from "../components/StatusBadge";
 import {
@@ -200,6 +205,26 @@ export default function CustomerDetailPage() {
 
       <Section title="Riscos e recuperação">
         <RisksPanel clientId={id} />
+      </Section>
+
+      <Section title="QBRs">
+        <QBRPanel clientId={id} />
+      </Section>
+
+      <Section title="Feedback de produto">
+        <ProductFeedbackPanel clientId={id} />
+      </Section>
+
+      <Section title="Suporte">
+        <SupportTicketsPanel clientId={id} />
+      </Section>
+
+      <Section title="Oportunidades de expansão">
+        <ExpansionPanel clientId={id} />
+      </Section>
+
+      <Section title="Renovação e churn">
+        <RenewalPanel clientId={id} />
       </Section>
 
       <Section title="Health Score">

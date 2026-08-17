@@ -15,8 +15,8 @@ DEFAULT_ALERT_RULES = [
     {"event_type": AlertEventType.QUEDA_UTILIZACAO, "name": "Queda de utilização dos módulos", "is_active": True, "auto_create_task": False},
     {"event_type": AlertEventType.MUDANCA_HEALTH_SCORE, "name": "Mudança relevante no Health Score", "is_active": True, "auto_create_task": False},
     {"event_type": AlertEventType.SATISFACAO_NEGATIVA, "name": "Resposta NPS/CSAT negativa", "is_active": True, "auto_create_task": True},
-    {"event_type": AlertEventType.RENOVACAO_PROXIMA, "name": "Renovação próxima", "is_active": False, "auto_create_task": False},
-    {"event_type": AlertEventType.RENOVACAO_RISCO, "name": "Renovação próxima combinada com risco", "is_active": False, "auto_create_task": False},
+    {"event_type": AlertEventType.RENOVACAO_PROXIMA, "name": "Renovação próxima", "is_active": True, "auto_create_task": False},
+    {"event_type": AlertEventType.RENOVACAO_RISCO, "name": "Renovação próxima combinada com risco", "is_active": True, "auto_create_task": True},
     {"event_type": AlertEventType.IMPLANTACAO_ATRASADA, "name": "Implantação atrasada com impacto no cliente", "is_active": True, "auto_create_task": False},
     {"event_type": AlertEventType.RISCO_CRITICO, "name": "Risco crítico em aberto", "is_active": True, "auto_create_task": True},
 ]
@@ -239,6 +239,53 @@ DEFAULT_PERMISSIONS: dict[str, dict[RoleName, dict[str, bool]]] = {
         RoleName.PRODUTO: {"can_view": True, "can_create": False, "can_edit": False, "can_delete": False},
         RoleName.GESTAO: {"can_view": True, "can_create": False, "can_edit": False, "can_delete": False},
     },
+    # Bloco 16
+    "qbrs": {
+        RoleName.CS: {"can_view": True, "can_create": True, "can_edit": True, "can_delete": True},
+        RoleName.GESTOR_CS: {"can_view": True, "can_create": True, "can_edit": True, "can_delete": True},
+        RoleName.GESTAO: {"can_view": True, "can_create": False, "can_edit": False, "can_delete": False},
+        RoleName.COMERCIAL: {"can_view": False, "can_create": False, "can_edit": False, "can_delete": False},
+        RoleName.PROJETOS: {"can_view": False, "can_create": False, "can_edit": False, "can_delete": False},
+        RoleName.SUPORTE: {"can_view": False, "can_create": False, "can_edit": False, "can_delete": False},
+        RoleName.PRODUTO: {"can_view": False, "can_create": False, "can_edit": False, "can_delete": False},
+    },
+    "product_feedback": {
+        RoleName.CS: {"can_view": True, "can_create": True, "can_edit": False, "can_delete": False},
+        RoleName.GESTOR_CS: {"can_view": True, "can_create": True, "can_edit": True, "can_delete": True},
+        RoleName.PRODUTO: {"can_view": True, "can_create": False, "can_edit": True, "can_delete": False},
+        RoleName.SUPORTE: {"can_view": True, "can_create": True, "can_edit": False, "can_delete": False},
+        RoleName.GESTAO: {"can_view": True, "can_create": False, "can_edit": False, "can_delete": False},
+        RoleName.COMERCIAL: {"can_view": False, "can_create": False, "can_edit": False, "can_delete": False},
+        RoleName.PROJETOS: {"can_view": False, "can_create": False, "can_edit": False, "can_delete": False},
+    },
+    "support_tickets": {
+        RoleName.SUPORTE: {"can_view": True, "can_create": True, "can_edit": True, "can_delete": False},
+        RoleName.CS: {"can_view": True, "can_create": True, "can_edit": True, "can_delete": False},
+        RoleName.GESTOR_CS: {"can_view": True, "can_create": True, "can_edit": True, "can_delete": True},
+        RoleName.GESTAO: {"can_view": True, "can_create": False, "can_edit": False, "can_delete": False},
+        RoleName.COMERCIAL: {"can_view": False, "can_create": False, "can_edit": False, "can_delete": False},
+        RoleName.PROJETOS: {"can_view": False, "can_create": False, "can_edit": False, "can_delete": False},
+        RoleName.PRODUTO: {"can_view": False, "can_create": False, "can_edit": False, "can_delete": False},
+    },
+    # Bloco 17
+    "expansion_opportunities": {
+        RoleName.CS: {"can_view": True, "can_create": True, "can_edit": True, "can_delete": False},
+        RoleName.GESTOR_CS: {"can_view": True, "can_create": True, "can_edit": True, "can_delete": True},
+        RoleName.COMERCIAL: {"can_view": True, "can_create": True, "can_edit": True, "can_delete": False},
+        RoleName.GESTAO: {"can_view": True, "can_create": False, "can_edit": False, "can_delete": False},
+        RoleName.PROJETOS: {"can_view": False, "can_create": False, "can_edit": False, "can_delete": False},
+        RoleName.SUPORTE: {"can_view": False, "can_create": False, "can_edit": False, "can_delete": False},
+        RoleName.PRODUTO: {"can_view": False, "can_create": False, "can_edit": False, "can_delete": False},
+    },
+    "renewals": {
+        RoleName.CS: {"can_view": True, "can_create": True, "can_edit": True, "can_delete": False},
+        RoleName.GESTOR_CS: {"can_view": True, "can_create": True, "can_edit": True, "can_delete": True},
+        RoleName.COMERCIAL: {"can_view": True, "can_create": False, "can_edit": False, "can_delete": False},
+        RoleName.GESTAO: {"can_view": True, "can_create": False, "can_edit": False, "can_delete": False},
+        RoleName.PROJETOS: {"can_view": False, "can_create": False, "can_edit": False, "can_delete": False},
+        RoleName.SUPORTE: {"can_view": False, "can_create": False, "can_edit": False, "can_delete": False},
+        RoleName.PRODUTO: {"can_view": False, "can_create": False, "can_edit": False, "can_delete": False},
+    },
 }
 
 
@@ -279,8 +326,14 @@ def run():
                 db.add(HealthScoreIndicator(**indicator_data))
 
         for rule_data in DEFAULT_ALERT_RULES:
-            if not db.query(AlertRule).filter(AlertRule.event_type == rule_data["event_type"]).first():
+            existing_rule = db.query(AlertRule).filter(AlertRule.event_type == rule_data["event_type"]).first()
+            if not existing_rule:
                 db.add(AlertRule(**rule_data))
+            elif rule_data["event_type"] in (AlertEventType.RENOVACAO_PROXIMA, AlertEventType.RENOVACAO_RISCO):
+                # Bloco 17: esses avaliadores ficaram desativados desde o Bloco 15
+                # por falta de data de renovação — reativar agora que existe.
+                existing_rule.is_active = rule_data["is_active"]
+                existing_rule.auto_create_task = rule_data["auto_create_task"]
 
         db.commit()
         print("Matriz de permissões padrão aplicada.")

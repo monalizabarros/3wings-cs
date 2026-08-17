@@ -816,3 +816,240 @@ export interface Contact {
   created_at: string;
   updated_at: string;
 }
+
+export type QBRStatus = "agendado" | "realizado" | "cancelado";
+
+export const QBR_STATUS_LABELS: Record<QBRStatus, string> = {
+  agendado: "Agendado",
+  realizado: "Realizado",
+  cancelado: "Cancelado",
+};
+
+export const QBR_STATUS_TONE: Record<QBRStatus, ClientStatusTone> = {
+  agendado: "warning",
+  realizado: "success",
+  cancelado: "neutral",
+};
+
+export interface QBR {
+  id: string;
+  client_id: string;
+  scheduled_date: string;
+  completed_at: string | null;
+  status: QBRStatus;
+  participants: string | null;
+  agenda: string | null;
+  achievements: string | null;
+  challenges: string | null;
+  next_period_goals: string | null;
+  action_plan_id: string | null;
+  created_by_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type FeedbackCategory = "melhoria" | "bug" | "nova_funcionalidade" | "elogio" | "reclamacao";
+
+export const FEEDBACK_CATEGORY_LABELS: Record<FeedbackCategory, string> = {
+  melhoria: "Melhoria",
+  bug: "Bug",
+  nova_funcionalidade: "Nova funcionalidade",
+  elogio: "Elogio",
+  reclamacao: "Reclamação",
+};
+
+export type FeedbackStatus = "novo" | "em_analise" | "planejado" | "entregue" | "recusado";
+
+export const FEEDBACK_STATUS_LABELS: Record<FeedbackStatus, string> = {
+  novo: "Novo",
+  em_analise: "Em análise",
+  planejado: "Planejado",
+  entregue: "Entregue",
+  recusado: "Recusado",
+};
+
+export const FEEDBACK_STATUS_TONE: Record<FeedbackStatus, ClientStatusTone> = {
+  novo: "neutral",
+  em_analise: "warning",
+  planejado: "warning",
+  entregue: "success",
+  recusado: "danger",
+};
+
+export interface ProductFeedback {
+  id: string;
+  client_id: string;
+  product_id: string | null;
+  module_id: string | null;
+  contact_id: string | null;
+  category: FeedbackCategory;
+  description: string;
+  status: FeedbackStatus;
+  created_by_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProductFeedbackWithClient extends ProductFeedback {
+  client_name: string;
+}
+
+export type TicketSeverity = "baixa" | "media" | "alta" | "critica";
+
+export const TICKET_SEVERITY_LABELS: Record<TicketSeverity, string> = {
+  baixa: "Baixa",
+  media: "Média",
+  alta: "Alta",
+  critica: "Crítica",
+};
+
+export type TicketStatus = "aberto" | "em_andamento" | "resolvido" | "fechado";
+
+export const TICKET_STATUS_LABELS: Record<TicketStatus, string> = {
+  aberto: "Aberto",
+  em_andamento: "Em andamento",
+  resolvido: "Resolvido",
+  fechado: "Fechado",
+};
+
+export const TICKET_STATUS_TONE: Record<TicketStatus, ClientStatusTone> = {
+  aberto: "danger",
+  em_andamento: "warning",
+  resolvido: "success",
+  fechado: "neutral",
+};
+
+export interface SupportTicket {
+  id: string;
+  client_id: string;
+  external_reference: string | null;
+  subject: string;
+  description: string | null;
+  severity: TicketSeverity;
+  status: TicketStatus;
+  opened_at: string;
+  closed_at: string | null;
+  satisfaction_score: number | null;
+  created_by_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SupportSummary {
+  open_tickets: number;
+  critical_open_tickets: number;
+  total_tickets: number;
+  avg_satisfaction: number | null;
+}
+
+export type ExpansionType = "cross_sell" | "upsell";
+
+export const EXPANSION_TYPE_LABELS: Record<ExpansionType, string> = {
+  cross_sell: "Cross-sell",
+  upsell: "Upsell",
+};
+
+export type ExpansionStage = "identificada" | "em_qualificacao" | "proposta" | "negociacao" | "ganha" | "perdida";
+
+export const EXPANSION_STAGE_LABELS: Record<ExpansionStage, string> = {
+  identificada: "Identificada",
+  em_qualificacao: "Em qualificação",
+  proposta: "Proposta",
+  negociacao: "Negociação",
+  ganha: "Ganha",
+  perdida: "Perdida",
+};
+
+export const EXPANSION_STAGE_TONE: Record<ExpansionStage, ClientStatusTone> = {
+  identificada: "neutral",
+  em_qualificacao: "warning",
+  proposta: "warning",
+  negociacao: "warning",
+  ganha: "success",
+  perdida: "danger",
+};
+
+export interface ExpansionOpportunity {
+  id: string;
+  client_id: string;
+  product_id: string | null;
+  module_id: string | null;
+  type: ExpansionType;
+  description: string;
+  estimated_value: number | null;
+  stage: ExpansionStage;
+  probability: number | null;
+  expected_close_date: string | null;
+  responsible_user_id: string | null;
+  created_by_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ExpansionOpportunityWithClient extends ExpansionOpportunity {
+  client_name: string;
+}
+
+export type RenewalStatus = "pendente" | "em_negociacao" | "renovado" | "nao_renovado";
+
+export const RENEWAL_STATUS_LABELS: Record<RenewalStatus, string> = {
+  pendente: "Pendente",
+  em_negociacao: "Em negociação",
+  renovado: "Renovado",
+  nao_renovado: "Não renovado",
+};
+
+export const RENEWAL_STATUS_TONE: Record<RenewalStatus, ClientStatusTone> = {
+  pendente: "neutral",
+  em_negociacao: "warning",
+  renovado: "success",
+  nao_renovado: "danger",
+};
+
+export interface Renewal {
+  id: string;
+  client_id: string;
+  contract_end_date: string;
+  renewal_value: number | null;
+  status: RenewalStatus;
+  risk_notes: string | null;
+  resolved_at: string | null;
+  created_by_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RenewalWithClient extends Renewal {
+  client_name: string;
+}
+
+export type ChurnCategory =
+  | "preco"
+  | "produto"
+  | "suporte"
+  | "concorrencia"
+  | "orcamento_cliente"
+  | "insatisfacao"
+  | "outro";
+
+export const CHURN_CATEGORY_LABELS: Record<ChurnCategory, string> = {
+  preco: "Preço",
+  produto: "Produto",
+  suporte: "Suporte",
+  concorrencia: "Concorrência",
+  orcamento_cliente: "Orçamento do cliente",
+  insatisfacao: "Insatisfação",
+  outro: "Outro",
+};
+
+export interface ChurnRecord {
+  id: string;
+  client_id: string;
+  renewal_id: string | null;
+  churn_date: string;
+  category: ChurnCategory;
+  description: string | null;
+  lost_value: number | null;
+  created_by_id: string | null;
+  created_at: string;
+}

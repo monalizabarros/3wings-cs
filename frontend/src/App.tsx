@@ -13,7 +13,9 @@ import DashboardPage from "./pages/DashboardPage";
 import AlertsPage from "./pages/AlertsPage";
 import ReportsPage from "./pages/ReportsPage";
 import TasksPage from "./pages/TasksPage";
-import PlaceholderPage from "./pages/PlaceholderPage";
+import ProductFeedbackPage from "./pages/ProductFeedbackPage";
+import ExpansionOverviewPage from "./pages/ExpansionOverviewPage";
+import RenewalOverviewPage from "./pages/RenewalOverviewPage";
 
 function ProtectedLayout() {
   const { user, loading } = useAuth();
@@ -39,8 +41,9 @@ export default function App() {
           <Route path="/riscos" element={<RisksOverviewPage />} />
           <Route path="/alertas" element={<AlertsPage />} />
           <Route path="/relatorios" element={<ReportsPage />} />
-          <Route path="/expansao" element={<PlaceholderPage title="Expansão" />} />
-          <Route path="/renovacao" element={<PlaceholderPage title="Renovação" />} />
+          <Route path="/feedback-produto" element={<ProductFeedbackPage />} />
+          <Route path="/expansao" element={<ExpansionOverviewPage />} />
+          <Route path="/renovacao" element={<RenewalOverviewPage />} />
           <Route path="/usuarios" element={<UsersPage />} />
           <Route path="/auditoria" element={<AuditPage />} />
         </Route>
