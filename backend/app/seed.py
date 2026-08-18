@@ -1,8 +1,7 @@
 import os
 
 from app.core.security import hash_password
-from app.database import Base, SessionLocal, engine
-from app.migrations import run_light_migrations
+from app.database import SessionLocal
 from app.models.alert_rule import AlertEventType, AlertRule
 from app.models.client import TierLevel
 from app.models.health_score import HealthScoreIndicator, IndicatorSource
@@ -290,8 +289,9 @@ DEFAULT_PERMISSIONS: dict[str, dict[RoleName, dict[str, bool]]] = {
 
 
 def run():
-    Base.metadata.create_all(bind=engine)
-    run_light_migrations(engine)
+    """Pressupõe que o schema já está migrado (`alembic upgrade head`).
+    Só semeia dados: admin, matriz de permissões, cadências e regras
+    padrão."""
     db = SessionLocal()
     try:
         if not db.query(User).filter(User.email == DEFAULT_ADMIN_EMAIL).first():

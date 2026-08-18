@@ -1,0 +1,25 @@
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8010:8010"
+    environment:
+      CS_SECRET_KEY: ${CS_SECRET_KEY:?defina CS_SECRET_KEY no seu .env ou ambiente antes de subir (openssl rand -hex 32)}
+      CS_CORS_ORIGINS: ${CS_CORS_ORIGINS:-http://localhost:5173}
+      CS_ADMIN_EMAIL: ${CS_ADMIN_EMAIL:-admin@3wings.com.br}
+      CS_ADMIN_PASSWORD: ${CS_ADMIN_PASSWORD:-trocar123}
+    volumes:
+      - cs_data:/app/data
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8010}
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+
+volumes:
+  cs_data:

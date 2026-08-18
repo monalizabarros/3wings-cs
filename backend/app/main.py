@@ -2,8 +2,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import CORS_ORIGINS
-from app.database import Base, engine
-from app.migrations import run_light_migrations
 from app.routers import (
     account_risks,
     action_plans,
@@ -37,9 +35,9 @@ from app.routers import (
     users,
 )
 
-Base.metadata.create_all(bind=engine)
-run_light_migrations(engine)
-
+# O schema do banco é gerenciado via Alembic, não mais criado/alterado aqui.
+# Antes de rodar pela primeira vez (ou após puxar mudanças de schema):
+#   cd backend && alembic upgrade head
 app = FastAPI(title="3Wings CS API", version="0.1.0")
 
 app.add_middleware(

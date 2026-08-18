@@ -10,7 +10,9 @@ from app.models.health_score import HealthScoreClassification, HealthScoreSnapsh
 from app.models.implementation import ImplementationSituation, ImplementationSummary
 from app.models.survey import Survey, SurveyType
 from app.models.task import Task, TaskPriority, TaskStatus
+from app.models.user import User
 from app.services.check_ins_overview import list_overdue_clients
+from app.services.email import send_email
 from app.services.health_score import get_deterioration_reasons
 
 RENEWAL_WINDOW_DAYS = 60
@@ -261,3 +263,26 @@ def _ensure_task(db: Session, alert: dict, actor_id: str | None) -> None:
     )
     db.add(task)
     db.commit()
+
+    # Só notifica por e-mail no primeiro disparo de cada alerta (a tarefa
+    # acima já garante o dedup) — evita spam a cada vez que o dashboard é
+    # recarregado.
+    _notify_client_owner(db, alert)
+
+
+def _notify_client_owner(db: Session, alert: dict) -> None:
+    client = db.get(Client, alert["client_id"])
+    if not client or not client.owner_user_id:
+        return
+    owner = db.get(User, client.owner_user_id)
+    if not owner or not owner.email:
+        return
+
+    subject = f"[3Wings CS] Alerta crítico — {alert['client_name']}"
+    body = (
+        f"Um alerta crítico foi disparado para a conta {alert['client_name']}.\n\n"
+        f"Tipo: {alert['event_type'].value}\n"
+        f"Mensagem: {alert['message']}\n\n"
+        "Uma tarefa de acompanhamento já foi criada automaticamente no 3Wings CS."
+    )
+    send_email(owner.email, subject, body)
