@@ -60,3 +60,18 @@ docker compose up --build
 Backend em `http://localhost:8010`, frontend em `http://localhost:5173`. O container do backend roda `alembic upgrade head` e o seed automaticamente a cada start (ambos idempotentes).
 
 Para notificação por e-mail de alertas críticos, configure `CS_SMTP_*` no `.env` (ver `backend/.env.example`) — sem isso, o envio vira um no-op logado.
+
+## Deploy no servidor Linux (porta 10012 + Traefik)
+
+Local: `./scripts/build-images.sh` (gera `deploy/` com as imagens linux/amd64, o compose de produção e os templates de env).
+Servidor (pasta própria, ex.: `cs-app/`):
+
+```bash
+docker load < cs-images.tar.gz
+cp backend.env.example backend.env   # preencha CS_SECRET_KEY, CS_ADMIN_PASSWORD, SMTP
+cp .env.example .env                 # CS_DOMAIN=cs.3wings.com.br
+mkdir -p data
+docker compose -f docker-compose.prod.yml up -d
+```
+
+Acesso: `http://SERVIDOR:10012` e `https://cs.3wings.com.br` (Traefik, rede `traefik_network` já existente). Atualizar: gerar novas imagens, `docker load` e `docker compose -f docker-compose.prod.yml up -d`. Backup: copiar `data/cs.db`.

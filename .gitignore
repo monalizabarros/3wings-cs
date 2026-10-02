@@ -19,3 +19,7 @@ frontend/dist/
 
 # Sistema
 .DS_Store
+
+# Artefatos de deploy
+deploy/
+backend.env

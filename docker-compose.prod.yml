@@ -1,0 +1,41 @@
+# Compose de PRODUÇÃO — roda no servidor a partir de imagens pré-buildadas
+# (geradas com `scripts/build-images.sh` em linux/amd64 e enviadas via
+# `docker load`). Sem `build:` de propósito.
+# Entrada: porta 10012 (direto) e/ou Traefik em https://${CS_DOMAIN}.
+# O nginx do frontend faz proxy de /api para o backend (rede interna).
+services:
+  backend:
+    image: cs-backend:latest
+    container_name: cs-backend
+    restart: unless-stopped
+    environment:
+      - "TZ=America/Recife"
+    env_file: ./backend.env          # CS_SECRET_KEY, CS_ADMIN_PASSWORD, CS_SMTP_*...
+    volumes:
+      - ./data:/app/data             # cs.db (bind mount — entra no backup)
+    networks:
+      - default
+
+  frontend:
+    image: cs-frontend:latest
+    container_name: cs-frontend
+    restart: unless-stopped
+    ports:
+      - "10012:80"
+    depends_on:
+      - backend
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_network"
+      - "traefik.http.routers.cs.rule=Host(`${CS_DOMAIN:?defina CS_DOMAIN no .env ao lado deste compose}`)"
+      - "traefik.http.routers.cs.entrypoints=websecure"
+      - "traefik.http.routers.cs.tls=true"
+      - "traefik.http.routers.cs.tls.certresolver=myresolver"
+      - "traefik.http.services.cs.loadbalancer.server.port=80"
+    networks:
+      - default
+      - traefik_network
+
+networks:
+  traefik_network:
+    external: true

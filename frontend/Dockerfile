@@ -1,4 +1,4 @@
-FROM node:20-slim AS build
+FROM --platform=$BUILDPLATFORM node:20-slim AS build
 
 WORKDIR /app
 
@@ -7,7 +7,8 @@ RUN npm ci
 
 COPY . .
 
-ARG VITE_API_URL=http://localhost:8010
+# /api: o nginx do container faz proxy para o backend (mesma origem, sem CORS)
+ARG VITE_API_URL=/api
 ENV VITE_API_URL=${VITE_API_URL}
 RUN npm run build
 
